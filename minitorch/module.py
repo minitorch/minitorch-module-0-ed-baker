@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Tuple
+from itertools import chain
 
 
 class Module:
@@ -31,13 +32,15 @@ class Module:
 
     def train(self) -> None:
         "Set the mode of this module and all descendent modules to `train`."
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
+        self.training = True
+        for m in self._modules.values():
+            m.train()
 
     def eval(self) -> None:
         "Set the mode of this module and all descendent modules to `eval`."
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
+        self.training = False
+        for m in self._modules.values():
+            m.eval()
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
         """
@@ -47,13 +50,35 @@ class Module:
         Returns:
             The name and `Parameter` of each ancestor parameter.
         """
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
+        # Get parameters of the current module.
+        own_params = list(
+            map(lambda item: (item[0], item[1]), self._parameters.items())
+        )
+
+        # Helper function to prefix parameter names with the module name
+        def prefix_name(module_name, module):
+            return map(
+                lambda p: (f"{module_name}.{p[0]}", p[1]), module.named_parameters()
+            )
+
+        # Get parameters of descendant modules
+        descendant_params = list(
+            chain.from_iterable(
+                prefix_name(name, module) for name, module in self._modules.items()
+            )
+        )
+
+        return own_params + descendant_params
 
     def parameters(self) -> Sequence[Parameter]:
         "Enumerate over all the parameters of this module and its descendents."
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
+        own_params = list(map(lambda item: item, self._parameters.values()))
+        child_params = list(
+            chain.from_iterable(
+                map(lambda item: item.parameters(), self._modules.values())
+            )
+        )
+        return own_params + child_params
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """
